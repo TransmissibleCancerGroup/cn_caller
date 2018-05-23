@@ -17,7 +17,7 @@ abline(v = segment_borders, col = "grey90")
 centres <- segment_borders[1:(length(segment_borders) - 1)] + diff(segment_borders) / 2
 text(d$cns, x = centres, y = -3, col = "black")
 
-jmod <- jags.model("~/code/stan/copynumber/copynumber.bug",
+jmod <- jags.model("copynumber.bug",
                    data = list(logr = logr,
                                nsegments = nrow(d),
                                starts = c(1, 1+cumsum(d$sizes)[1:(length(d$sizes-2))]),
