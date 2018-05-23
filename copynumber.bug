@@ -1,0 +1,32 @@
+model {
+    # PRIORS
+    for (s in 1:nsegments) {
+        # sample CNplus1 (i.e. "copy number state + 1") (integer values) from categorical distribution
+        # Why CNplus1? Because categorical dist returns values 1 and above, but we want CN range from 0 upwards
+        CNplus1[s] ~ dcat(rep(1, nsegments))
+    }
+    
+    # Sample rho (purity) from a beta distribution. The mean of a beta is a / (a+b), so
+    # one way to set a prior of rho = 0.6 would be rho_a=6, rho_b=4 [0.6 = 6 / (6+4)]
+    rho ~ dbeta(rho_a, rho_b)
+    
+    # Sample psi (ploidy) from a gamma distribution. The mean of a gamma is a / b, so
+    # to set a prior of psi = 2, use psi_a = 4, psi_b = 2 [2 = 4/2]
+    psi ~ dgamma(psi_a, psi_b)
+    
+    # DETERMINISTIC NODES
+    for (s in 1:nsegments) {
+        # Per segment, calculate the idealised logR - i.e. the log R we would expect if the current values
+        # of copy number (i.e. CNplus1 - 1), rho and psi were true.
+        idealised_logr[s] <- log((rho * (CNplus1[s] - 1) + 2 * (1 - rho)) / (2 * (1 - rho) + rho * psi)) / log(2)
+    }
+    
+    # DATA
+    for (s in 1:nsegments) {
+        for (n in starts[s]:ends[s]) {
+            # likelihood calculation assumes that each segment's logr is normally distributed around
+            # the idealised logR
+            logr[n] ~ dnorm(idealised_logr[s], sd)
+        }
+    }
+}
