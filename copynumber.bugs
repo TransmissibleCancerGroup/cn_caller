@@ -1,9 +1,13 @@
 model {
+    # HYPERPRIORS
+    normal_sd ~ dnorm(0, 5) T(0,)
+    beta_conc ~ dnorm(0, 5) T(0,)
+
     # PRIORS
     for (s in 1:nsegments) {
         # Sample A and B allele copy number states
-        cn_a[s] ~ dnegbin(1, 0.3)  # equivalent to geometric(0.3)
-        cn_b[s] ~ dnegbin(1, 0.3)
+        cn_a[s] ~ dnegbin(0.5, 1)  # equivalent to geometric(0.3)
+        cn_b[s] ~ dnegbin(0.5, 1)
     }
 
     # Sample rho (purity) from a beta distribution. The mean of a beta is a / (a+b), so
@@ -12,14 +16,15 @@ model {
 
     # Sample psi (ploidy) from a gamma distribution. The mean of a gamma is a / b, so
     # to set a prior of psi = 2, use psi_a = 4, psi_b = 2 [2 = 4/2]
-    psi ~ dgamma(psi_a, psi_b)
+    #psi ~ dgamma(psi_a, psi_b)
+    psi <- 2
 
     # DETERMINISTIC NODES
     for (s in 1:nsegments) {
         # Per segment, calculate the idealised logR - i.e. the log R we would expect if the current values
         # of copy number (i.e. CNplus1 - 1), rho and psi were true.
-        idealised_logr[s] <- log((rho * (cn_a[s] + cn_b[s] - 1) + 2 * (1 - rho)) / (2 * (1 - rho) + rho * psi)) / log(2)
-        idealised_vaf[s] <- ((1 - rho + rho * cn_b[s]) / (2 - 2 * rho + rho * (cn_a[s] + cn_b[s]))
+        idealised_logr[s] <- log((rho * (cn_a[s] + cn_b[s]) + 2 * (1 - rho)) / (2 * (1 - rho) + rho * psi)) / log(2)
+        idealised_vaf[s] <- ((1 - rho + rho * cn_b[s]) / (2 - 2 * rho + rho * (cn_a[s] + cn_b[s])))
     }
 
     # DATA
@@ -27,8 +32,8 @@ model {
         for (n in starts[s]:ends[s]) {
             # likelihood calculation assumes that each segment's logr is normally distributed around
             # the idealised logR
-            logr[n] ~ dnorm(idealised_logr[s], sd)
-            vaf[n] ~ dbeta(idealised_vaf[s] * sd, sd)
+            logr[n] ~ dnorm(idealised_logr[s], normal_sd)
+            vaf[n] ~ dbeta(idealised_vaf[s] * beta_conc, (1 - idealised_vaf[s]) * beta_conc)
         }
     }
 }
