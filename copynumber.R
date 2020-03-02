@@ -44,7 +44,7 @@ text(d$cna, x = centres, y = 0.0, col = "black")
 text(d$cnb, x = centres, y = 0.5, col = "black")
 par(mfrow = c(1, 1))
 
-jmod <- jags.model("~/code/jags/copynumber/copynumber.bugs",
+jmod <- jags.model("copynumber.bug",
                    data = list(logr = logr,
                                vaf = mirror(vaf),
                                nsegments = nrow(d),
